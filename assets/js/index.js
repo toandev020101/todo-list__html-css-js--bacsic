@@ -49,15 +49,14 @@ const app = {
 				const taskItem = taskItemAction.parentElement
 
 				const taskItemInput = taskItem.firstElementChild
-				taskItemInput.removeAttribute('readonly')
-
-				taskItemEdit.textContent = 'Lưu lại'
-				taskItemEdit.onclick = function () {
-					if (taskItemEdit.textContent === 'Lưu lại') {
-						_this.tasks.splice(index, 1, taskItemInput.value)
-						taskItemInput.setAttribute('readonly', '')
-						taskItemEdit.textContent = 'Chỉnh sửa'
-					}
+				if (taskItemEdit.textContent === 'Chỉnh sửa') {
+					taskItemInput.removeAttribute('readonly')
+					taskItemInput.focus()
+					taskItemEdit.textContent = 'Lưu lại'
+				} else {
+					_this.tasks.splice(index, 1, taskItemInput.value)
+					taskItemInput.setAttribute('readonly', '')
+					taskItemEdit.textContent = 'Chỉnh sửa'
 				}
 			}
 		})
