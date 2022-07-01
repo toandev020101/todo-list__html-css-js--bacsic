@@ -1,3 +1,4 @@
 # todo-list__html-css-js--bacsic
-- CRUD (create, read, update, delete)
-- công nghệ: html, css, js
+- Nội dung: danh sách công việc
+- Chức năng: CRUD (create, read, update, delete)
+- Công nghệ: html, css, js
