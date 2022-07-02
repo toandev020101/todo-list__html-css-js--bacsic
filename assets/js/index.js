@@ -5,12 +5,14 @@ const newTaskAddInput = $('.new-task-add__input')
 const newTaskAddBtn = $('.new-task-add__btn')
 const listTask = $('.list-task__wrapper')
 
-const app = {
-	tasks: ['Hello World', 'Todo List', 'Build Task'],
+const localStorageKey = 'TodoList'
 
-	taskElement: function (item) {
-		return `<li class="list-task__item">
-              <input type="text" class="list-task__item--input" value="${item}" readonly />
+const app = {
+	tasks: JSON.parse(localStorage.getItem(localStorageKey)) || [],
+
+	taskElement: function (content, id) {
+		return `<li data-index="${id}" class="list-task__item">
+              <input type="text" class="list-task__item--input" value="${content}" readonly />
               <div>
                 <button class="list-task__item-action list-task__item-action--edit">Chỉnh sửa</button>
                 <button class="list-task__item-action list-task__item-action--del">Xóa</button>
@@ -18,10 +20,12 @@ const app = {
             </li>`
 	},
 
+	saveLocalStorage: function () {
+		localStorage.setItem(localStorageKey, JSON.stringify(this.tasks))
+	},
+
 	handleEvents: function () {
 		const _this = this
-		let listTaskItemEdit = $$('.list-task__item-action--edit')
-		let listTaskItemDel = $$('.list-task__item-action--del')
 
 		// Xử lý thêm task
 		newTaskAddBtn.onclick = function () {
@@ -30,67 +34,77 @@ const app = {
 				if (taskItemEmpty) {
 					taskItemEmpty.remove()
 				}
-				_this.tasks.push(newTaskAddInput.value)
 
+				const id = listTask.lastElementChild
+					? parseInt(listTask.lastElementChild.dataset.index) + 1
+					: 0
+
+				_this.tasks.push({ id, content: newTaskAddInput.value })
+				_this.saveLocalStorage()
 				listTask.insertAdjacentHTML(
 					'beforeend',
-					_this.taskElement(newTaskAddInput.value),
+					_this.taskElement(newTaskAddInput.value, id),
 				)
 
 				newTaskAddInput.value = ''
-				_this.handleEvents()
 			}
 		}
 
-		// Xử lý sửa task
-		listTaskItemEdit.forEach((taskItemEdit, index) => {
-			taskItemEdit.onclick = function () {
-				const taskItemAction = taskItemEdit.parentElement
-				const taskItem = taskItemAction.parentElement
-
+		// xử lý sửa / xóa task
+		listTask.onclick = function (e) {
+			const btn = e.target
+			if (btn.classList.contains('list-task__item-action')) {
+				const taskItem = btn.parentElement.parentElement
 				const taskItemInput = taskItem.firstElementChild
-				if (taskItemEdit.textContent === 'Chỉnh sửa') {
-					taskItemInput.removeAttribute('readonly')
-					taskItemInput.focus()
-					taskItemEdit.textContent = 'Lưu lại'
+
+				// sửa task
+				if (btn.textContent.toLowerCase() !== 'xóa') {
+					if (btn.textContent === 'Chỉnh sửa') {
+						taskItemInput.removeAttribute('readonly')
+						taskItemInput.focus()
+						btn.textContent = 'Lưu lại'
+					} else {
+						const id = parseInt(taskItem.dataset.index)
+						const index = _this.tasks.findIndex(
+							(taskItem) => taskItem.id === id,
+						)
+						_this.tasks.splice(index, 1, {
+							id,
+							content: taskItemInput.value,
+						})
+						_this.saveLocalStorage()
+						taskItemInput.setAttribute('readonly', '')
+						btn.textContent = 'Chỉnh sửa'
+					}
 				} else {
-					_this.tasks.splice(index, 1, taskItemInput.value)
-					taskItemInput.setAttribute('readonly', '')
-					taskItemEdit.textContent = 'Chỉnh sửa'
+					// xóa task
+					const id = parseInt(taskItem.dataset.index)
+					const index = _this.tasks.findIndex((taskItem) => taskItem.id === id)
+					_this.tasks.splice(index, 1)
+					taskItem.remove()
+					_this.saveLocalStorage()
+
+					if (_this.tasks.length === 0) {
+						listTask.innerHTML = `<li class="list-task__item--empty">Danh sách rỗng</li>`
+					}
 				}
 			}
-		})
-
-		// Xử lý xóa task
-		listTaskItemDel.forEach((taskItemDel, index) => {
-			taskItemDel.onclick = function () {
-				const taskItemAction = taskItemDel.parentElement
-				const taskItem = taskItemAction.parentElement
-
-				_this.tasks.splice(index, 1)
-				taskItem.remove()
-
-				if (_this.tasks.length === 0) {
-					listTask.innerHTML = `<li class="list-task__item--empty">Danh sách rỗng</li>`
-				}
-
-				_this.handleEvents()
-			}
-		})
+		}
 	},
 
 	render: function () {
 		let htmls
-
 		if (this.tasks.length === 0) {
-			htmls = [`<li class="list-task__item--empty">Danh sách rỗng</li>`]
+			htmls = `<li class="list-task__item--empty">Danh sách rỗng</li>`
 		} else {
-			htmls = this.tasks.map((task) => {
-				return this.taskElement(task)
-			})
+			htmls = this.tasks
+				.map((task) => {
+					return this.taskElement(task.content, task.id)
+				})
+				.join('')
 		}
 
-		listTask.innerHTML = htmls.join('')
+		listTask.innerHTML = htmls
 	},
 
 	start: function () {
